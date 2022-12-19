@@ -45,6 +45,11 @@ function startNewGame() {
 }
 
 function startNextLevel() {
+
+	console.log("Start playing")
+	reset();
+
+
 	// save gun and ammo
 	let ammoPistol = g_player ? g_player.ammoBullets : 12;
 	let ammoShotgun = g_player ? g_player.ammoShells : 0;
@@ -202,6 +207,11 @@ function updateStateDead() {
 
 function updateStateCleared() {
 	textMiddle = "Level " + (g_level + 1) + " cleared";
+	if(localStorage["level_" + g_level] == null || compareTime(gameTime,JSON.parse(localStorage.getItem("level_" + g_level))) > 0)
+		localStorage.setItem("level_" + g_level,JSON.stringify(gameTime))
+		
+	
+	textTopTime = "Best Time: " + getTimeString( JSON.parse(localStorage.getItem("level_" + g_level)))
 
 	if (getMsSinceStateChange() > 2000) {
 		textBottom = "Click to continue";
@@ -246,12 +256,14 @@ function updateStatePlaying() {
 	if (rand() < 0.1) pushers.push(new Pusher(g_player.pos, -0.001, 0, 5, rand(5), PushTo.ENEMIES));
 
 	updatePushers();
+	updateStopwatch();
 
 	textMiddle = getMsSinceStateChange() > 3000 ? "" : "Level " + (g_level + 1);
 
 	ticsToSpawn--;
 
-	let enemiesToSpawn = (g_levelDef.enemiesToSpawn * (1 + g_difficulty)) / 2;
+	// let enemiesToSpawn = (g_levelDef.enemiesToSpawn * (1 + g_difficulty)) / 2;
+	let enemiesToSpawn = 1;
 	let enemiesMaxAlive = g_levelDef.enemiesMaxAlive * g_difficulty;
 
 	let enemiesLeft = enemiesToSpawn - enemiesSpawned + g_enemies.length;
@@ -326,11 +338,14 @@ function gameUpdatePost() {
 var textTitle;
 var textMiddle;
 var textBottom;
+var textStopwach;
+var textTopTime
 
 function textsClear() {
 	textTitle = undefined;
 	textMiddle = undefined;
 	textBottom = undefined;
+	textTopTime = undefined;
 }
 
 function drawTextWithOutline(text, pos, size, textColor, outlineColor = colorBlack) {
@@ -350,7 +365,6 @@ function testForMiscount() {
 
 function textsDraw() {
 	debug && testForMiscount();
-
 	if (g_CHEATMODE) {
 		drawTextScreen("CHEAT MODE ON ", vec2(100, 25), 20, colorWhite, 0, undefined, "left");
 		drawTextScreen("enemies: " + g_enemies.length, vec2(100, 50), 20, colorWhite, 0, undefined, "left");
@@ -379,6 +393,46 @@ function textsDraw() {
 			mainCanvas.width / 20,
 			colorBlood
 		);
+	}
+
+	if(textStopwach)
+	{
+		drawTextScreen(
+				textStopwach,
+				vec2(
+					mainCanvas.width * 0.1,
+					mainCanvas.height * 0.2
+				),
+				mainCanvas.width * .03,
+				colorBlood
+			);
+	}
+
+	
+	if(textTopTime)
+	{
+		// drawTextScreen(
+		// 		textTopTime,
+		// 		vec2(
+		// 			mainCanvas.width * 0.5,
+		// 			mainCanvas.height * 0.33
+		// 		),
+		// 		mainCanvas.width * .04,
+		// 		colorBlood
+		// 	);
+		let flicker = (1 + Math.sin(frame / 50)) * 0.007;
+
+		for (let i = 0; i < 10; i++) {
+			drawTextScreen(
+				textTopTime,
+				vec2(
+					(rand(1 - flicker, 1 + flicker) * mainCanvas.width) * .5,
+					(rand(1 - flicker, 1 + flicker) * mainCanvas.height) * .33
+				),
+				mainCanvas.width * .04,
+				colorBlack.lerp(colorBlood, i / 10)
+			);
+		}
 	}
 
 	if (textBottom) {
